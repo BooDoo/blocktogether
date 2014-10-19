@@ -5,7 +5,8 @@
 var express = require('express'), // Web framework
     url = require('url'),
     bodyParser = require('body-parser'),
-    cookieSession = require('cookie-session'),
+    session = require('express-session'),
+    SequelizeStore = require('connect-sequelize')(session),
     crypto = require('crypto'),
     mu = require('mu2'),          // Mustache.js templating
     passport = require('passport'),
@@ -21,6 +22,7 @@ var config = setup.config,
     twitter = setup.twitter,
     logger = setup.logger,
     userToFollow = setup.userToFollow,
+    sequelize = setup.sequelize,
     BtUser = setup.BtUser,
     Action = setup.Action,
     BlockBatch = setup.BlockBatch,
@@ -35,13 +37,17 @@ function makeApp() {
   var app = express();
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: false }));
-  app.use(cookieSession({
-    keys: [config.cookieSecret],
-    secureProxy: config.secureProxy
+  app.use('/static', express["static"](__dirname + '/static'));
+  app.use(session({
+    secret: config.cookieSecret,
+    store: new SequelizeStore(sequelize),
+    saveUninitialized: false,
+    resave: false,
+    unset: 'destroy',
+    proxy: config.secureProxy
   }));
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use('/static', express["static"](__dirname + '/static'));
   app.use('/', express["static"](__dirname + '/static'));
 
   // Error handler.
